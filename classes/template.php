@@ -320,7 +320,19 @@ class template {
         $pdf->Write(0, $USER->firstname . ' '. $USER->lastname, '', 0, 'C', true, 0, false, false, 0);
         $pdf->SetFont('helvetica', '', 12);
         $pdf->Ln();
-        $pdf->Write(0, "geboren am [Datum]", '', 0, 'C', true, 0, false, false, 0);
+
+        $sql = "SELECT uid.data
+			FROM {user_info_data} uid
+			JOIN {user_info_field} uif ON uid.fieldid = uif.id
+			WHERE uif.shortname = 'birthday'";
+
+        $birthday =$DB->get_records_sql($sql, array());
+
+        foreach( $birthday as $birth){
+            $birthday = $birth->data;
+        }
+
+        $pdf->Write(0, "geboren am ". date("d.m.Y", intval($birthday)), '', 0, 'C', true, 0, false, false, 0);
         $pdf->Ln();
         $pdf->Write(0, "hat in Lehrgang", '', 0, 'C', true, 0, false, false, 0);
         $pdf->Ln();
@@ -330,14 +342,19 @@ class template {
         $pdf->Ln();
         $pdf->SetFont('helvetica', 'B', 18);
 
-        $topicname = $DB->get_field('course_sections', 'name', array('id'=> $cm->section));
-        $pdf->Write(10, $topicname, '', 0, 'C', true, 0, false, false, 0);
+        $topic = $DB->get_record('course_sections', array('id'=> $cm->section));
+        $pdf->Write(10, $topic->name, '', 0, 'C', true, 0, false, false, 0);
         $pdf->SetFont('helvetica', '', 12);
 
-        $pdf->Write(0, "[Datum/Zeitraum]", '', 0, 'C', true, 0, false, false, 0);
+        $summaryRaw = $topic->summary;
+        $summaryData = explode(":", $summaryRaw);
+        substr($summaryData[2], 0, strpos($summaryData, "</p><p"));
+
+
+        $pdf->Write(0, substr($summaryData[2], 0, strpos($summaryData[2], "</p><p")), '', 0, 'C', true, 0, false, false, 0);
         $pdf->Ln();
         $pdf->Ln();
-        $pdf->Write(0, "ReferentInnen: [Name und Titel des/r Referentin/Referenten]", '', 0, 'C', true, 0, false, false, 0);
+        $pdf->Write(0, "ReferentInnen: " . substr($summaryData[4], 0, strpos($summaryData[4], "</p>")), '', 0, 'C', true, 0, false, false, 0);
         $pdf->Ln();
         $pdf->Ln();
         $pdf->Write(0, "teilgenommen.", '', 0, 'C', true, 0, false, false, 0);
